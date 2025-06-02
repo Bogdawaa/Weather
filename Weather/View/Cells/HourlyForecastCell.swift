@@ -7,7 +7,7 @@
 
 import UIKit
 
-class HourForecastCollectionViewCell: UICollectionViewCell {
+class HourlyForecastCell: UICollectionViewCell {
     
     static let reuseIdentifier = "HourForecastCollectionViewCell"
     
