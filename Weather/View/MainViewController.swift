@@ -7,10 +7,9 @@
 
 import UIKit
 
-class MainViewController: UIViewController {
+final class MainViewController: UIViewController {
 
     // MARK: - UI Elements
-    
     private lazy var activityIndicator: UIActivityIndicatorView = {
         let activityIndicator = UIActivityIndicatorView(style: .medium)
         activityIndicator.hidesWhenStopped = true
@@ -110,50 +109,64 @@ class MainViewController: UIViewController {
         setupUI()
         presenter.viewDidLoad()
     }
-    
-    override func viewDidLayoutSubviews() {
-        hourForecastCollectionView.layer.cornerRadius = hourForecastCollectionView.frame.height / 20
-    }
 }
 
 // MARK: - Public Methods
-extension MainViewController {
-    func updateViewData(with forecast: ForecastResponse) {
-        self.locationNameLabel.text = forecast.location.name
-        
-        self.currentTemperatureLabel.text = String(format: "%.0f°C", forecast.current.tempC)
-        
-        self.conditionTextLabel.text = forecast.current.condition.text
-        
-        self.extremumTemperaturesLabel.text = String(
-            format: "Макс.: %.0f°C, мин.: %.0f°C",
-            forecast.forecast.forecastday[0].day.maxtempC,
-            forecast.forecast.forecastday[0].day.mintempC
-        )
-    }
+extension MainViewController: MainViewProtocol {
     
-    func displayError(_ message: String) {
-        let alert = UIAlertController(title: "Error", message: message, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "OK", style: .default))
-        present(alert, animated: true)
-    }
-    
-    func showLoading() {
-        activityIndicator.startAnimating()
-    }
-    
-    func hideLoading() {
-        activityIndicator.stopAnimating()
+    // Display
+    func displayCurrentDayForecast(_ forecast: ForecastResponse) {
+        DispatchQueue.main.async {
+            self.locationNameLabel.text = forecast.location.name
+            self.currentTemperatureLabel.text = String(format: "%.0f°C", forecast.current.tempC)
+            self.conditionTextLabel.text = forecast.current.condition.text
+            self.extremumTemperaturesLabel.text = String(
+                format: "Макс.: %.0f°C, мин.: %.0f°C",
+                forecast.forecast.forecastday[0].day.maxtempC,
+                forecast.forecast.forecastday[0].day.mintempC
+            )
+        }
     }
     
     func displayHourlyForecast(_ hours: [HourForecast]) {
         hourlyForecast = hours
-        hourForecastCollectionView.reloadData()
+        
+        DispatchQueue.main.async {
+            self.hourForecastCollectionView.reloadSections(IndexSet(integer: 0))
+        }
     }
     
     func displayDailyForecast(_ days: [ForecastDay]) {
         dailyForecast = days
-        hourForecastCollectionView.reloadData()
+        
+        DispatchQueue.main.async {
+            self.hourForecastCollectionView.reloadSections(IndexSet(integer: 1))
+        }
+    }
+    
+    
+    // Alert
+    func displayError(_ message: String) {
+        DispatchQueue.main.async {
+            let alert = UIAlertController(title: "Error", message: message, preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "OK", style: .default))
+            self.present(alert, animated: true)
+        }
+    }
+    
+    // State
+    func showLoading() {
+        DispatchQueue.main.async {
+            self.activityIndicator.startAnimating()
+            self.view.isUserInteractionEnabled = false
+        }
+    }
+    
+    func hideLoading() {
+        DispatchQueue.main.async {
+            self.activityIndicator.stopAnimating()
+            self.view.isUserInteractionEnabled = true
+        }
     }
 }
 
