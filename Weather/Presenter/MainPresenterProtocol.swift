@@ -6,3 +6,8 @@
 //
 
 import Foundation
+
+protocol MainPresenter {
+    func attachView(_ view: MainViewProtocol)
+    func viewDidLoad()
+}
