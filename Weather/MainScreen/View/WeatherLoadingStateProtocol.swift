@@ -8,6 +8,9 @@
 import Foundation
 
 protocol WeatherLoadingStateProtocol: AnyObject {
+    var isRefreshing: Bool { get }
+    
     func showLoading()
     func hideLoading()
+    func endRefreshing()
 }

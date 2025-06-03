@@ -17,6 +17,7 @@ final class MainPresenterImpl {
     private let locationManager: LocationManager
     
     private var defaultLocation: String = "Moscow"
+    private var isRefreshing = false
     
     private(set) var forecastWeather: ForecastResponse?
     private(set) var currentWeather: WeatherResponse?
@@ -51,9 +52,17 @@ final class MainPresenterImpl {
 extension MainPresenterImpl: MainPresenter {
     func fetchCurrentWeater() {
         Task { @MainActor in
+            defer {
+                isRefreshing = false
+                view?.endRefreshing()
+            }
+            
             do {
                 // daily forecast
-                view?.showLoading()
+                if view?.isRefreshing == false {
+                    view?.showLoading()
+                }
+                
                 let language = LanguageService.shared.weatherAPILanguageCode
                 let forecastWeather = try await weatherService.getForecast(
                     for: defaultLocation,
@@ -75,8 +84,10 @@ extension MainPresenterImpl: MainPresenter {
                 view?.displayHourlyForecast(filteredHours)
                 
                 view?.hideLoading()
+                view?.endRefreshing()
             } catch {
                 view?.hideLoading()
+                view?.endRefreshing()
                 errorMessage = "Невозможно получить текущий прогноз погоды. Ошибка: \(error)"
                 view?.displayError(errorMessage ?? "")
             }
@@ -86,6 +97,12 @@ extension MainPresenterImpl: MainPresenter {
     
     func attachView(_ view: MainViewProtocol) {
         self.view = view
+    }
+    
+    func didPullToRefresh() {
+        guard !isRefreshing else { return }
+        isRefreshing = true
+        locationManager.requestLocation()
     }
     
     func processAdditionalWeatherItems(_ weather: ForecastResponse) {

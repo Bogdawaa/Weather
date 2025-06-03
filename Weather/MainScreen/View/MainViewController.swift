@@ -84,7 +84,6 @@ final class MainViewController: UIViewController {
         )
         
         collectionView.dataSource = self
-        collectionView.bouncesVertically = false
         collectionView.backgroundColor = .clear
         collectionView.showsVerticalScrollIndicator = false
         return collectionView
@@ -92,7 +91,9 @@ final class MainViewController: UIViewController {
     
     
     // MARK: - Properties
-    private var presenter: MainPresenter
+    private let refreshControl = UIRefreshControl()
+    private let presenter: MainPresenter
+    
     private var hourlyForecast: [HourForecast] = []
     private var dailyForecast: [ForecastDay] = []
     
@@ -100,6 +101,10 @@ final class MainViewController: UIViewController {
     private var precipitationItems: [WeatherItem] = []
     private var windItems: [WeatherItem] = []
     
+    // MARK: - Computed Properties
+    var isRefreshing: Bool {
+        return refreshControl.isRefreshing
+    }
     
     // MARK: - Init
     init(presenter: MainPresenter) {
@@ -170,7 +175,12 @@ extension MainViewController: MainViewProtocol {
     // Alert
     func displayError(_ message: String) {
         DispatchQueue.main.async {
-            let alert = UIAlertController(title: "Error", message: message, preferredStyle: .alert)
+            self.refreshControl.endRefreshing()
+            let alert = UIAlertController(
+                title: "Error".localized.capitalized,
+                message: message,
+                preferredStyle: .alert
+            )
             alert.addAction(UIAlertAction(title: "OK", style: .default))
             self.present(alert, animated: true)
         }
@@ -190,6 +200,12 @@ extension MainViewController: MainViewProtocol {
             self.view.isUserInteractionEnabled = true
         }
     }
+    
+    func endRefreshing() {
+        DispatchQueue.main.async {
+            self.refreshControl.endRefreshing()
+        }
+    }
 }
 
 // MARK: - Private Methods
@@ -199,6 +215,7 @@ private extension MainViewController {
         disableConstraintsTranslation()
         addSubviews()
         setupConstraints()
+        setupRefreshControl()
     }
     
     func disableConstraintsTranslation() {
@@ -233,7 +250,7 @@ private extension MainViewController {
         ])
     }
     
-    private func createCompositionalLayout() -> UICollectionViewLayout {
+    func createCompositionalLayout() -> UICollectionViewLayout {
         let layout = UICollectionViewCompositionalLayout { sectionIndex, layoutEnvironment in
             switch sectionIndex {
             case 0:
@@ -373,6 +390,17 @@ private extension MainViewController {
         
         return section
     }
+    
+    // Pull to refresh setup
+    func setupRefreshControl() {
+        refreshControl.tintColor = .systemBlue
+        refreshControl.attributedTitle = NSAttributedString(
+            string: "Updating weather...".localized.capitalized,
+            attributes: [.foregroundColor: UIColor.secondaryLabel]
+        )
+        refreshControl.addTarget(self, action: #selector(refreshWeatherData), for: .valueChanged)
+        hourForecastCollectionView.refreshControl = refreshControl
+    }
 }
 
 // MARK: - Extension UICollectionViewDataSource
@@ -441,3 +469,9 @@ extension MainViewController: UICollectionViewDataSource {
     }
 }
 
+// MARK: - Actions
+extension MainViewController {
+    @objc private func refreshWeatherData() {
+        presenter.didPullToRefresh()
+    }
+}
