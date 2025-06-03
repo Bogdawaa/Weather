@@ -16,9 +16,9 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         guard let scene = (scene as? UIWindowScene) else { return }
         window = UIWindow(windowScene: scene)
         
-        var presenter: MainPresenter = MainPresenterImpl()
+        let presenter = MainPresenterImpl()
         let vc = MainViewController(presenter: presenter)
-        presenter.view = vc
+        presenter.attachView(vc)
         
         window?.rootViewController = vc
         window?.makeKeyAndVisible()
