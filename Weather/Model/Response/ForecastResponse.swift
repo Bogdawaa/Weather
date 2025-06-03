@@ -30,12 +30,15 @@ struct ForecastDay: Codable {
     }
     
     var dayName: String {
-        let dateFormatter = DateFormatter()
-                dateFormatter.dateFormat = "yyyy-MM-dd"
-                guard let date = dateFormatter.date(from: date) else { return date }
+        let dateFormatter = DateFormatter.defaultFormatter
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        dateFormatter.locale = Locale(identifier: LanguageService.shared.currentLanguage)
+        guard let date = dateFormatter.date(from: date) else { return date }
         
         if Calendar.current.isDateInToday(date) {
-            return "Today"
+            var currentDay: String = ""
+            LanguageService.shared.currentLanguage == "en" ? (currentDay = "Today") : (currentDay = "Сегодня")
+            return currentDay
         } else {
             dateFormatter.dateFormat = "EE"
             return dateFormatter.string(from: date)

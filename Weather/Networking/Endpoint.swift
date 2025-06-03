@@ -46,4 +46,26 @@ struct Endpoint {
         
         return url
     }
+    
+    init(
+        path: String,
+        method: HTTPMethod,
+        queryParameters: [String: String]? = nil,
+        headers: [String: String]? = nil,
+        body: Encodable? = nil,
+        language: String? = nil
+    ) {
+        self.path = path
+        self.method = method
+        self.headers = headers
+        self.body = body
+        
+        var finalQueryParams = queryParameters ?? [:]
+        if let language = language {
+            finalQueryParams["lang"] = language
+        }
+        
+        self.queryParameters = finalQueryParams
+
+    }
 }
