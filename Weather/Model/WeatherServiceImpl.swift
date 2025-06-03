@@ -16,7 +16,30 @@ final class WeatherServiceImpl: WeatherService {
         self.networkClient = networkClient
     }
     
-    func getForecast(for location: String, days: Int = 3) async throws -> ForecastResponse {
+    func getForecast(latitude: Double, longitude: Double, language: String) async throws -> ForecastResponse {
+        let location = "\(latitude),\(longitude)"
+        return try await getForecast(for: location, language: language)
+    }
+    
+    func getForecast(for location: String, days: Int = 3, language: String = "ru") async throws -> ForecastResponse {
+        let endpoint = Endpoint(
+            path: "/forecast.json",
+            method: .GET,
+            queryParameters: [
+                "key": apiKey,
+                "q": location,
+                "days": "\(days)",
+                "aqi": "no"
+            ],
+            headers: ["Content-Type": "application/json"],
+            body: nil,
+            language: language
+        )
+        
+        return try await networkClient.request(endpoint)
+    }
+    
+    func getHourlyForecast(for location: String, days: Int = 2, language: String = "ru") async throws -> [HourForecast] {
         let endpoint = Endpoint(
             path: "/forecast.json",
             method: .GET,
@@ -27,14 +50,11 @@ final class WeatherServiceImpl: WeatherService {
                 "aqi": "no",
             ],
             headers: ["Content-Type": "application/json"],
-            body: nil
+            body: nil,
+            language: language
         )
         
-        return try await networkClient.request(endpoint)
-    }
-    
-    func getForecast(latitude: Double, longitude: Double) async throws -> ForecastResponse {
-        let location = "\(latitude),\(longitude)"
-        return try await getForecast(for: location)
+        let response: ForecastResponse = try await networkClient.request(endpoint)
+        return response.forecast.forecastday.flatMap { $0.hour }
     }
 }
