@@ -7,21 +7,16 @@
 
 import Foundation
 
-@MainActor
-protocol MainPresenter {
-    var view: MainViewController? { get set }
-    var currentWeather: WeatherResponse? { get }
-    
-    func viewDidLoad()
-}
-
 final class MainPresenterImpl {
     
     // MARK: - Public Properties
-    weak var view: MainViewController?
+    weak var view: MainViewProtocol?
     
     // MARK: - Private Properties
     private let weatherService: WeatherService
+    private let locationManager: LocationManager
+    
+    private var defaultLocation: String = "Moscow"
     
     private(set) var forecastWeather: ForecastResponse?
     private(set) var currentWeather: WeatherResponse?
@@ -29,32 +24,54 @@ final class MainPresenterImpl {
     
     
     // MARK: - Init
-    init (weatherService: WeatherService = WeatherServiceImpl(apiKey: "fa8b3df74d4042b9aa7135114252304")) {
+    init (weatherService: WeatherService = WeatherServiceImpl(apiKey: "fa8b3df74d4042b9aa7135114252304"),
+        locationManager: LocationManager = LocationManager()
+    ) {
         self.weatherService = weatherService
+        self.locationManager = locationManager
+        
+        // delegate
+        locationManager.delegate = self
+        
         viewDidLoad()
     }
     
     func viewDidLoad() {
-        fetchCurrentWeater()
+        fetchWeatherForCurrentLocation()
+    }
+    
+    func fetchWeatherForCurrentLocation() {
+        view?.showLoading()
+        locationManager.requestLocation()
     }
 }
 
 
 // MARK: - MainPresenter Extension
 extension MainPresenterImpl: MainPresenter {
-    
     func fetchCurrentWeater() {
         Task { @MainActor in
             do {
+                // daily forecast
                 view?.showLoading()
-                let forecastWeather = try await weatherService.getForecast(for: "Moscow", days: 3)
-                view?.updateViewData(with: forecastWeather)
+                let language = LanguageService.shared.weatherAPILanguageCode
+                let forecastWeather = try await weatherService.getForecast(
+                    for: defaultLocation,
+                    days: 4,
+                    language: language
+                )
+                view?.displayCurrentDayForecast(forecastWeather)
                 view?.displayDailyForecast(forecastWeather.forecast.forecastday)
                 
-                if var hours = forecastWeather.forecast.forecastday.first?.hour {
-                    hours = hours.filter { $0.isCurrentOrFuture() }
-                    view?.displayHourlyForecast(hours)
-                }
+                // hourly forecast
+                let allHours = try await weatherService.getHourlyForecast(
+                    for: defaultLocation,
+                    days: 2,
+                    language: language
+                )
+                let filteredHours = allHours.filteredForCurrentAndNextDay()
+                view?.displayHourlyForecast(filteredHours)
+                
                 view?.hideLoading()
             } catch {
                 view?.hideLoading()
@@ -63,5 +80,26 @@ extension MainPresenterImpl: MainPresenter {
             }
             
         }
+    }
+    
+    func attachView(_ view: MainViewProtocol) {
+        self.view = view
+    }
+}
+
+// MARK: - LocationManagerDelegate Extension
+extension MainPresenterImpl: LocationManagerDelegate {
+    func didUpdateLocation(latitude: Double, longitude: Double) {
+        defaultLocation = "\(latitude),\(longitude)"
+        print("New location: \(defaultLocation)")
+        fetchCurrentWeater()
+    }
+    
+    func didFailWithError(error: Error) {
+        print("Location error: \(error.localizedDescription)")
+        errorMessage =  "Возникла ошибка при определении геолокации: \(error)"
+        view?.displayError(errorMessage ?? "Возникла ошибка при определении геолокации")
+        defaultLocation = "Moscow"
+        fetchCurrentWeater()
     }
 }
