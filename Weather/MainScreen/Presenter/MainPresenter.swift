@@ -63,6 +63,8 @@ extension MainPresenterImpl: MainPresenter {
                 view?.displayCurrentDayForecast(forecastWeather)
                 view?.displayDailyForecast(forecastWeather.forecast.forecastday)
                 
+                processAdditionalWeatherItems(forecastWeather)
+                
                 // hourly forecast
                 let allHours = try await weatherService.getHourlyForecast(
                     for: defaultLocation,
@@ -85,6 +87,54 @@ extension MainPresenterImpl: MainPresenter {
     func attachView(_ view: MainViewProtocol) {
         self.view = view
     }
+    
+    func processAdditionalWeatherItems(_ weather: ForecastResponse) {
+        print(weather)
+            let uvAndPressureSection = [
+                WeatherItem(
+                    title: "uv index".localized,
+                    value: "\(weather.current.uv)",
+                    iconName: "sun.max"
+                ),
+                WeatherItem(
+                    title: "pressure".localized,
+                    value: "\(weather.current.pressureMb)" + "millibars".localized,
+                    iconName: "barometer"
+                )
+            ]
+            
+            let precipitationSection = [
+                WeatherItem(
+                    title: "chance of rain".localized,
+                    value: "\(weather.forecast.forecastday.first?.day.dailyChanceOfRain ?? 0)%",
+                    iconName: "cloud.rain"
+                ),
+                WeatherItem(
+                    title: "chance of snow".localized,
+                    value: "\(weather.forecast.forecastday.first?.day.dailyChanceOfSnow ?? 0)%",
+                    iconName: "cloud.snow"
+                )
+            ]
+            
+            let windSection = [
+                WeatherItem(
+                    title: "wind speed".localized,
+                    value: "\(weather.current.windKph)" + "km h".localized,
+                    iconName: "wind"
+                ),
+                WeatherItem(
+                    title: "wind direction".localized,
+                    value: "\(weather.current.windDegree)°",
+                    iconName: "location.north"
+                )
+            ]
+            
+            view?.displayAdditionalSections(
+                uvAndPressure: uvAndPressureSection,
+                precipitation: precipitationSection,
+                wind: windSection
+            )
+        }
 }
 
 // MARK: - LocationManagerDelegate Extension

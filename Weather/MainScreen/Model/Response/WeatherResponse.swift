@@ -28,12 +28,20 @@ struct Current: Codable {
     let tempC: Double
     let isDay: Int
     let condition: Condition
+    let windKph: Double
+    let windDegree: Int
+    let pressureMb: Double
+    let uv: Double
     
     enum CodingKeys: String, CodingKey {
         case lastUpdatedEpoch = "last_updated_epoch"
         case tempC = "temp_c"
         case isDay = "is_day"
         case condition
+        case windKph = "wind_kph"
+        case windDegree = "wind_degree"
+        case pressureMb = "pressure_mb"
+        case uv
     }
 }
 
