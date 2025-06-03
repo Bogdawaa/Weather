@@ -23,6 +23,17 @@
         }
       }
     },
+    "error" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ошибка"
+          }
+        }
+      }
+    },
     "km h" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -74,6 +85,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Давление"
+          }
+        }
+      }
+    },
+    "updating weather..." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "обновление данных…"
           }
         }
       }
